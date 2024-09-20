@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"math/rand"
 	"testing"
 	"time"
@@ -34,9 +33,7 @@ func getTestParcel() Parcel {
 func TestAddGetDelete(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db")
-	if err != nil {
-		fmt.Println(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
@@ -55,10 +52,12 @@ func TestAddGetDelete(t *testing.T) {
 	// отсутствии ошибки
 	require.NoError(t, err)
 	// проверка, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
-	assert.Equal(t, obj.Client, parcel.Client)
-	assert.Equal(t, obj.Status, parcel.Status)
-	assert.Equal(t, obj.Address, parcel.Address)
-	assert.Equal(t, obj.CreatedAt, parcel.CreatedAt)
+	//временно меняется значение obj.Number для сравнения структур
+	old := obj.Number
+	obj.Number = parcel.Number
+	assert.Equal(t, obj, parcel)
+	// obj.Number возвращается прежнее значение
+	obj.Number = old
 
 	// delete
 	// удаление добавленной посылки
@@ -75,9 +74,7 @@ func TestAddGetDelete(t *testing.T) {
 func TestSetAddress(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db")
-	if err != nil {
-		fmt.Println(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -103,16 +100,14 @@ func TestSetAddress(t *testing.T) {
 	obj, err := store.Get(id)
 	require.NoError(t, err)
 	// адрес обновился
-	assert.Equal(t, obj.Address, newAddress)
+	assert.Equal(t, newAddress, obj.Address)
 }
 
 // TestSetStatus проверяет обновление статуса
 func TestSetStatus(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db")
-	if err != nil {
-		fmt.Println(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -143,9 +138,7 @@ func TestSetStatus(t *testing.T) {
 func TestGetByClient(t *testing.T) {
 	// prepare
 	db, err := sql.Open("sqlite", "tracker.db")
-	if err != nil {
-		fmt.Println(err)
-	}
+	require.NoError(t, err)
 	defer db.Close()
 
 	store := NewParcelStore(db)
@@ -187,9 +180,6 @@ func TestGetByClient(t *testing.T) {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// все посылки из storedParcels есть в parcelMap
 		// значения полей полученных посылок заполнены верно
-		val, ok := parcelMap[parcel.Number]
-		if ok {
-			assert.Equal(t, val, parcel)
-		}
+		assert.Equal(t, parcelMap[parcel.Number], parcel)
 	}
 }
